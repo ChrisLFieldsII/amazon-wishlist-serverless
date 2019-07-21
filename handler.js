@@ -45,6 +45,9 @@ module.exports.main = async event => {
   const prices = await page.$$eval('li[data-price]', nodes =>
     nodes.map(n => Number(n.attributes['data-price'].value)),
   );
+  const priorities = await page.$$eval('span[id*=itemPriorityLabel]', nodes =>
+    nodes.map(n => n.innerHTML),
+  );
 
   await takeScreenshot(page);
 
@@ -55,9 +58,11 @@ module.exports.main = async event => {
     numItems: itemNames.length,
     numUrls: itemUrls.length,
     numPrices: prices.length,
+    numPriorities: priorities.length,
     itemNames,
     itemUrls,
     prices,
+    priorities,
   };
 
   const strObj = JSON.stringify(obj, null, 5);
@@ -84,7 +89,7 @@ module.exports
   })
   .then(res => {
     const parsedBody = JSON.parse(res.body);
-    const { itemNames, itemUrls, prices, ...rest } = parsedBody;
+    const { itemNames, itemUrls, prices, priorities, ...rest } = parsedBody;
     console.log(rest, `\nStatus code: ${res.statusCode}`);
   })
   .catch(console.error);
