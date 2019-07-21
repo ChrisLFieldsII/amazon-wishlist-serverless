@@ -48,6 +48,12 @@ module.exports.main = async event => {
   const priorities = await page.$$eval('span[id*=itemPriorityLabel]', nodes =>
     nodes.map(n => n.innerHTML),
   );
+  const quantitiesReq = await page.$$eval('span[id*=itemRequested]', nodes =>
+    nodes.filter(n => n.id.startsWith('itemRequested_')).map(n => Number(n.innerHTML)),
+  );
+  const quantitiesHave = await page.$$eval('span[id*=itemPurchased]', nodes =>
+    nodes.filter(n => n.id.startsWith('itemPurchased_')).map(n => Number(n.innerHTML)),
+  );
 
   await takeScreenshot(page);
 
@@ -59,10 +65,14 @@ module.exports.main = async event => {
     numUrls: itemUrls.length,
     numPrices: prices.length,
     numPriorities: priorities.length,
+    quantitiesReqLength: quantitiesReq.length,
+    quantitiesHaveLength: quantitiesHave.length,
     itemNames,
     itemUrls,
     prices,
     priorities,
+    quantitiesReq,
+    quantitiesHave,
   };
 
   const strObj = JSON.stringify(obj, null, 5);
