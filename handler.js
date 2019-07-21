@@ -51,8 +51,8 @@ module.exports.main = async event => {
   }
 
   // collect data points
-  const itemNames = await page.$$eval('a[id*="itemName"]', nodes => nodes.map(n => n.innerHTML));
-  const itemUrls = await page.$$eval('div[id*=itemImage]', nodes =>
+  const names = await page.$$eval('a[id*="itemName"]', nodes => nodes.map(n => n.innerHTML));
+  const imageUrls = await page.$$eval('div[id*=itemImage]', nodes =>
     nodes.map(n => n.firstChild.firstChild.src),
   );
   const prices = await page.$$eval('li[data-price]', nodes =>
@@ -71,8 +71,8 @@ module.exports.main = async event => {
 
   // check that data point arrays are all same length, otherwise error out
   checkArrayLengthsEqual([
-    itemNames,
-    itemUrls,
+    names,
+    imageUrls,
     prices,
     priorities,
     quantitiesReq,
@@ -81,7 +81,19 @@ module.exports.main = async event => {
   ]);
 
   // reduce collected data points into array of objects
-  // const wishlist = TODO: finish reduce
+  const wishlist = names.reduce((accum, name, index) => {
+    const wishlistItem = {
+      name,
+      imageUrl: imageUrls[index],
+      price: prices[index],
+      priority: priorities[index],
+      quantityReq: quantitiesReq[index],
+      quantityHave: quantitiesHave[index],
+      comment: comments[index],
+    };
+    accum.push(wishlistItem);
+    return accum;
+  }, []);
 
   await takeScreenshot(page);
 
@@ -90,20 +102,8 @@ module.exports.main = async event => {
 
   const obj = {
     savedAt: new Date().toLocaleString(),
-    numItems: itemNames.length,
-    numUrls: itemUrls.length,
-    numPrices: prices.length,
-    numPriorities: priorities.length,
-    quantitiesReqLength: quantitiesReq.length,
-    quantitiesHaveLength: quantitiesHave.length,
-    commentsLength: comments.length,
-    itemNames,
-    itemUrls,
-    prices,
-    priorities,
-    quantitiesReq,
-    quantitiesHave,
-    comments,
+    numItems: names.length,
+    wishlist,
   };
 
   const strObj = JSON.stringify(obj, null, 5);
@@ -130,7 +130,7 @@ module.exports
   })
   .then(res => {
     const parsedBody = JSON.parse(res.body);
-    const { itemNames, itemUrls, prices, priorities, ...rest } = parsedBody;
+    const { wishlist, ...rest } = parsedBody;
     console.log(rest, `\nStatus code: ${res.statusCode}`);
   })
   .catch(err => {
