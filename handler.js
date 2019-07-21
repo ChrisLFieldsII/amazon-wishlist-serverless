@@ -32,20 +32,30 @@ module.exports.main = async event => {
     await page.waitFor(1000);
   }
 
+  // collect data points
   const itemNames = await page.$$eval('a[id*="itemName"]', nodes => nodes.map(n => n.innerHTML));
+  const itemUrls = await page.$$eval('div[id*=itemImage]', nodes =>
+    nodes.map(n => n.firstChild.firstChild.src),
+  );
+
   await takeScreenshot(page);
+
+  // cleanup resources
   await page.browser().close();
 
   const obj = {
     itemNames,
+    itemUrls,
     numItems: itemNames.length,
   };
 
-  fs.writeFileSync('json/my-list.json', JSON.stringify(obj, null, 5));
+  const strObj = JSON.stringify(obj, null, 5);
+
+  fs.writeFileSync('json/my-list.json', strObj);
 
   return {
     statusCode: 200,
-    body: JSON.stringify(obj, null, 2),
+    body: strObj,
   };
 
   // Use this code if you don't use the http event with the LAMBDA-PROXY integration
@@ -61,7 +71,7 @@ module.exports
   .then(console.log)
   .catch(console.error);
 
-/**
+/** EVENT PARAMS
  * @param wishlistUrl The url to the wishlist
  * @param scrollLoops The number of times to scroll page to load items.
  * Amazon uses infinite scrolling display
