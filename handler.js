@@ -3,12 +3,15 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
+const width = 1920;
+const height = 1080;
+
 const initWishlistPage = async url => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setViewport({
-    width: 1920,
-    height: 1080,
+    width,
+    height,
   });
   await page.goto(url);
   return page;
@@ -23,13 +26,14 @@ const takeScreenshot = async page => {
 };
 
 module.exports.main = async event => {
+  console.time();
   const { wishlistUrl, scrollLoops = 2 } = event;
 
   const page = await initWishlistPage(wishlistUrl);
 
   // this allows wishlist items to load due to infinite scrolling
   for (let x = 0; x < scrollLoops; x++) {
-    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+    await page.evaluate(`window.scrollBy(0, ${height / 2})`);
     await page.waitFor(1000);
   }
 
@@ -49,16 +53,19 @@ module.exports.main = async event => {
 
   const obj = {
     numItems: itemNames.length,
-    itemNames,
     numUrls: itemUrls.length,
-    itemUrls,
     numPrices: prices.length,
+    itemNames,
+    itemUrls,
     prices,
   };
 
   const strObj = JSON.stringify(obj, null, 5);
 
   fs.writeFileSync('json/my-list.json', strObj);
+
+  console.log('FUNCTION RUN TIME');
+  console.timeEnd();
 
   return {
     statusCode: 200,
@@ -71,11 +78,15 @@ module.exports.main = async event => {
 
 module.exports
   .main({
-    scrollLoops: 6,
+    scrollLoops: 20,
     wishlistUrl:
       'https://www.amazon.com/hz/wishlist/ls/33SHCDPOSZ155/ref=nav_wishlist_lists_1?_encoding=UTF8&type=wishlist',
   })
-  .then(console.log)
+  .then(res => {
+    const parsedBody = JSON.parse(res.body);
+    const { itemNames, itemUrls, prices, ...rest } = parsedBody;
+    console.log(rest, `\nStatus code: ${res.statusCode}`);
+  })
   .catch(console.error);
 
 /** EVENT PARAMS
