@@ -54,6 +54,7 @@ module.exports.main = async event => {
   const quantitiesHave = await page.$$eval('span[id*=itemPurchased]', nodes =>
     nodes.filter(n => n.id.startsWith('itemPurchased_')).map(n => Number(n.innerHTML)),
   );
+  const comments = await page.$$eval('span[id*=itemComment]', nodes => nodes.map(n => n.innerHTML));
 
   await takeScreenshot(page);
 
@@ -67,12 +68,14 @@ module.exports.main = async event => {
     numPriorities: priorities.length,
     quantitiesReqLength: quantitiesReq.length,
     quantitiesHaveLength: quantitiesHave.length,
+    commentsLength: comments.length,
     itemNames,
     itemUrls,
     prices,
     priorities,
     quantitiesReq,
     quantitiesHave,
+    comments,
   };
 
   const strObj = JSON.stringify(obj, null, 5);
