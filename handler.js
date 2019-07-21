@@ -24,6 +24,7 @@ const takeScreenshot = async page => {
 
 module.exports.main = async event => {
   const { wishlistUrl, scrollLoops = 2 } = event;
+
   const page = await initWishlistPage(wishlistUrl);
 
   // this allows wishlist items to load due to infinite scrolling
@@ -37,6 +38,9 @@ module.exports.main = async event => {
   const itemUrls = await page.$$eval('div[id*=itemImage]', nodes =>
     nodes.map(n => n.firstChild.firstChild.src),
   );
+  const prices = await page.$$eval('li[data-price]', nodes =>
+    nodes.map(n => Number(n.attributes['data-price'].value)),
+  );
 
   await takeScreenshot(page);
 
@@ -44,9 +48,12 @@ module.exports.main = async event => {
   await page.browser().close();
 
   const obj = {
-    itemNames,
-    itemUrls,
     numItems: itemNames.length,
+    itemNames,
+    numUrls: itemUrls.length,
+    itemUrls,
+    numPrices: prices.length,
+    prices,
   };
 
   const strObj = JSON.stringify(obj, null, 5);
