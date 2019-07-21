@@ -25,6 +25,19 @@ const takeScreenshot = async page => {
   });
 };
 
+/**
+ * @desc Checks that all arrays are equal length. Uses first array length to determine length
+ * all arrays should be.
+ * @param {Array} arrays An array containing the arrays to check as elements
+ */
+const checkArrayLengthsEqual = arrays => {
+  const { length } = arrays[0];
+  for (let x = 0; x < arrays.length; x++) {
+    if (arrays[x].length !== length)
+      throw new Error('Array lengths are not equal. Failing to avoid inconsistent data');
+  }
+};
+
 module.exports.main = async event => {
   console.time();
   const { wishlistUrl, scrollLoops = 2 } = event;
@@ -56,12 +69,27 @@ module.exports.main = async event => {
   );
   const comments = await page.$$eval('span[id*=itemComment]', nodes => nodes.map(n => n.innerHTML));
 
+  // check that data point arrays are all same length, otherwise error out
+  checkArrayLengthsEqual([
+    itemNames,
+    itemUrls,
+    prices,
+    priorities,
+    quantitiesReq,
+    quantitiesHave,
+    comments,
+  ]);
+
+  // reduce collected data points into array of objects
+  // const wishlist = TODO: finish reduce
+
   await takeScreenshot(page);
 
   // cleanup resources
   await page.browser().close();
 
   const obj = {
+    savedAt: new Date().toLocaleString(),
     numItems: itemNames.length,
     numUrls: itemUrls.length,
     numPrices: prices.length,
@@ -105,7 +133,10 @@ module.exports
     const { itemNames, itemUrls, prices, priorities, ...rest } = parsedBody;
     console.log(rest, `\nStatus code: ${res.statusCode}`);
   })
-  .catch(console.error);
+  .catch(err => {
+    console.error(err);
+    process.exit();
+  });
 
 /** EVENT PARAMS
  * @param wishlistUrl The url to the wishlist
